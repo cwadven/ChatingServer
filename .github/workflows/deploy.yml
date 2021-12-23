@@ -1,0 +1,22 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Pull Master Branch
+      run: |
+
+    - name: Collectstatic
+      run: |
+
+    - name: Database Update
+      run: |
+
+    - name: Restart server
+      run: |
