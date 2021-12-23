@@ -112,3 +112,14 @@ Project Root
 
 [edit . 2021-12-23]
 
+## 나도 만들고 싶다 하면!! 이용하는 방법
+
+```text
+1. ENV.py 를 만들어 자신의 SECRET_KEY 를 만들어라
+2. "python manage.py migrate" 로 데이터베이스를 최신화 시켜줘라
+3. "python manage.py createsuperuser" 로 슈퍼 유저를 만들어라
+4. "python manage.py collectstatic" 로 정적 파일을 받아라
+5. Redis 를 설치한 후, Redis 서버를 켜라
+6. Daphne 를 설치하
+.... 추후 추가
+```
