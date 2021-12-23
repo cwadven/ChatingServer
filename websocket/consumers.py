@@ -1,0 +1,46 @@
+from channels.generic.websocket import AsyncWebsocketConsumer
+from asgiref.sync import async_to_sync
+import json
+
+from channels.layers import get_channel_layer
+
+
+class ChatConsumer(AsyncWebsocketConsumer):
+    # websocket 연결 시 실행
+    async def connect(self):
+        # chat/routing.py 에 있는
+        # path('ws/test/<str:username>/',consumers.ChatConsumer),
+        self.groupname = self.scope['url_route']['kwargs']['room']
+
+        # Join room group
+        await self.channel_layer.group_add(
+            self.groupname,
+            self.channel_name
+        )
+        await self.accept()
+
+    # websocket 연결 종료 시 실행
+    async def disconnect(self, close_code):
+        # Leave room group
+        await self.channel_layer.group_discard(
+            self.groupname,
+            self.channel_name
+        )
+
+    # Receive message from WebSocket
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+
+        # Send message to room group
+        # {}가 chat_message event 매소드이다
+        # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
+        await self.channel_layer.group_send(
+            self.groupname, {'type': 'test', 'message': 'message', }
+        )
+
+    async def test(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'message': message,
+        }))
