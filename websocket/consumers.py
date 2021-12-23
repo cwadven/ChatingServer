@@ -19,12 +19,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         await self.accept()
 
+        username = self.scope['user'].username if self.scope['user'].username else str(self.scope['headers'][10][1])[
+                                                                                   2:7] + "익명"
+        await self.channel_layer.group_send(
+            self.groupname, {'type': 'greet', 'username': username}
+        )
+
     # websocket 연결 종료 시 실행
     async def disconnect(self, close_code):
         # Leave room group
         await self.channel_layer.group_discard(
             self.groupname,
             self.channel_name
+        )
+
+        username = self.scope['user'].username if self.scope['user'].username else str(self.scope['headers'][10][1])[
+                                                                                   2:7] + "익명"
+        await self.channel_layer.group_send(
+            self.groupname, {'type': 'bye', 'username': username}
         )
 
     # Receive message from WebSocket
@@ -36,11 +48,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # {}가 chat_message event 매소드이다
         # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
         await self.channel_layer.group_send(
-            self.groupname, {'type': 'test', 'message': 'message', }
+            self.groupname, {'type': 'test', 'message': message}
         )
 
     async def test(self, event):
         message = event['message']
         await self.send(text_data=json.dumps({
             'message': message,
+        }))
+
+    # 환영
+    async def greet(self, event):
+        message = f"{event['username']} 님이 입장하셨습니다."
+
+        await self.send(text_data=json.dumps({
+            'message': message
+        }))
+
+    # 나가기
+    async def bye(self, event):
+        message = f"{event['username']} 님이 퇴장하셨습니다."
+
+        await self.send(text_data=json.dumps({
+            'message': message
         }))
