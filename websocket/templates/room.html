@@ -54,16 +54,16 @@
             document.querySelector('#chat-log').appendChild(_p);
         }
         // 방이름
-        var roomName = {{ room_name_json }};
+        const roomName = {{ room_name_json }};
 
         // js에서 제공하는 WebSocket 사용
-        var chatSocket = new WebSocket(
+        const chatSocket = new WebSocket(
             'ws://' + window.location.host +
             '/ws/chat/' + roomName);
 
         // 메세지가 있을 경우? 메시지를 추가한다
         chatSocket.onmessage = function(e) {
-            let data = JSON.parse(e.data);
+            const data = JSON.parse(e.data);
             appendMessage(data['message']);
         };
 
@@ -91,8 +91,9 @@
 
         // 엔터를 하면 해당 input에 있는 정보를 JSON화 시켜서 chatSocket에 전송한다
         document.querySelector('#chat-message-submit').onclick = function(e) {
-            var messageInputDom = document.querySelector('#chat-message-input');
-            var message = messageInputDom.value;
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            document.querySelector('#chat-message-input').focus();
 
             if (message) {
                 chatSocket.send(JSON.stringify({
