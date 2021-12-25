@@ -1,10 +1,16 @@
 import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import async_to_sync
 import json
 
-from channels.layers import get_channel_layer
+LEAVE_MSG = 0
+GREET_MSG = 1
+NORMAL_MSG = 2
 
+MESSAGE_TYPE = {
+    LEAVE_MSG: LEAVE_MSG,
+    GREET_MSG: GREET_MSG,
+    NORMAL_MSG: NORMAL_MSG,
+}
 
 class ChatConsumer(AsyncWebsocketConsumer):
     # websocket 연결 시 실행
@@ -58,7 +64,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def get_messages(self, event):
         message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
         await self.send(text_data=json.dumps({
-            'message': message,
+            'message': message, 'message_type': MESSAGE_TYPE[NORMAL_MSG],
         }))
 
     # 환영
@@ -66,7 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': message, 'message_type': MESSAGE_TYPE[GREET_MSG],
         }))
 
     # 나가기
@@ -74,5 +80,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': message,  'message_type': MESSAGE_TYPE[LEAVE_MSG],
         }))
