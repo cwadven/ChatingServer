@@ -63,7 +63,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 환영
     async def greet(self, event):
-        message = f""""{event['username']}" 님이 입장하셨습니다."""
+        message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
         await self.send(text_data=json.dumps({
             'message': message
@@ -71,7 +71,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 나가기
     async def bye(self, event):
-        message = f"{event['username']} 님이 퇴장하셨습니다."
+        message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
         await self.send(text_data=json.dumps({
             'message': message
