@@ -75,10 +75,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def greet(self, event):
         # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
         if self.current_user_set.get(self.groupname):
-            self.current_user_set[self.groupname][event['username']] = True
+            self.current_user_set[self.groupname][event['username']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         else:
             self.current_user_set[self.groupname] = {}
-            self.current_user_set[self.groupname][event['username']] = True
+            self.current_user_set[self.groupname][event['username']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
 
         current_user_set = json.dumps(self.current_user_set[self.groupname])
 
