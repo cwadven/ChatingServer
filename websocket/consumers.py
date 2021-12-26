@@ -12,7 +12,10 @@ MESSAGE_TYPE = {
     NORMAL_MSG: NORMAL_MSG,
 }
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
+    current_user_set = {}
+
     # websocket 연결 시 실행
     async def connect(self):
         # chat/routing.py 에 있는
@@ -28,6 +31,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         username = self.scope['user'].username if self.scope['user'].username else str(self.scope['headers'][10][1])[
                                                                                    2:7] + "익명"
+
         room_name = self.groupname
         await self.channel_layer.group_send(
             self.groupname, {'type': 'greet', 'username': username, 'room_name': room_name}
@@ -69,16 +73,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 환영
     async def greet(self, event):
+        # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
+        if self.current_user_set.get(self.groupname):
+            self.current_user_set[self.groupname][event['username']] = True
+        else:
+            self.current_user_set[self.groupname] = {}
+            self.current_user_set[self.groupname][event['username']] = True
+
+        current_user_set = json.dumps(self.current_user_set[self.groupname])
+
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
         await self.send(text_data=json.dumps({
-            'message': message, 'message_type': MESSAGE_TYPE[GREET_MSG],
+            'message': message, 'message_type': MESSAGE_TYPE[GREET_MSG], 'current_user_set': current_user_set,
         }))
 
     # 나가기
     async def bye(self, event):
+        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname)[event['username']]:
+            del self.current_user_set[self.groupname][event['username']]
+        current_user_set = json.dumps(self.current_user_set[self.groupname])
+
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
         await self.send(text_data=json.dumps({
-            'message': message,  'message_type': MESSAGE_TYPE[LEAVE_MSG],
+            'message': message, 'message_type': MESSAGE_TYPE[LEAVE_MSG], 'current_user_set': current_user_set,
         }))
