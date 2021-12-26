@@ -20,6 +20,14 @@
             inline-size: -webkit-fill-available;
         }
 
+        #user-list {
+            max-width: 1000px;
+            width: 100%;
+            border: 1px solid;
+            height: 200px;
+            overflow: auto;
+        }
+
         p.chat-message {
             margin: 3px;
         }
@@ -41,94 +49,119 @@
             text-align: center;
             background-color: #dbff9e;
         }
+
+        p.each-user {
+            margin: 3px;
+            font-size: 14px;
+            background-color: #f4f4f4;
+        }
     </style>
 </head>
 <body>
-    <body>
-        <div id="chat-log">
-        </div>
-        <div id="container-chat-message-input">
-            <input id="chat-message-input" style="inline-size: inherit;" type="text" /><br/>
-        </div>
-        <div style="margin: 5px;">
-            <input style="max-width: 1000px; width: 100%;" id="chat-message-submit" type="button" value="전송"/>
-        </div>
-        <div>
-            <input style="color: red; display: none; max-width: 1000px; width: 100%;" onClick="window.location.reload();" id="chat-message-refresh" type="button" value="재접속"/>
-        </div>
-    </body>
+<body>
+<div id="chat-log">
+</div>
+<div id="container-chat-message-input">
+    <input id="chat-message-input" style="inline-size: inherit;" type="text"/><br/>
+</div>
+<div style="margin: 5px;">
+    <input style="max-width: 1000px; width: 100%;" id="chat-message-submit" type="button" value="전송"/>
+</div>
+<div>
+    <input style="color: red; display: none; max-width: 1000px; width: 100%;" onClick="window.location.reload();"
+           id="chat-message-refresh" type="button" value="재접속"/>
+</div>
+<div id="user-list"></div>
+</body>
 
-    <script>
-        function appendMessage(message, className="chat-message") {
+<script>
+    function appendMessage(message, className = "chat-message") {
+        let _p = document.createElement("p");
+        _p.className = className;
+        _p.innerHTML = message;
+        document.querySelector('#chat-log').appendChild(_p);
+    }
+
+    function refreshUser(userSet) {
+        console.log(userSet)
+        document.querySelector('#user-list').innerHTML = "";
+        userSet.forEach(([user, time]) => {
             let _p = document.createElement("p");
-            _p.className = className;
-            _p.innerHTML = message;
-            document.querySelector('#chat-log').appendChild(_p);
+            _p.className = "each-user";
+            _p.innerHTML = "[(참여시간) " + time + "] " + user;
+            document.querySelector('#user-list').appendChild(_p);
+        });
+    }
+
+    // 방이름
+    const roomName = {{ room_name_json }};
+
+    // 메시지 타입
+    const LEAVE_MSG = 0;
+    const GREET_MSG = 1;
+    const NORMAL_MSG = 2;
+
+    // js에서 제공하는 WebSocket 사용
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host +
+        '/ws/chat/' + roomName);
+
+    // 메세지가 있을 경우? 메시지를 추가한다
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        if (data['message_type'] === NORMAL_MSG) {
+            appendMessage(data['message']);
+        } else if (data['message_type'] === LEAVE_MSG) {
+            appendMessage(data['message'], "chat-message-leave");
+
+            const userListObj = Object.entries(JSON.parse(data['current_user_set']));
+            refreshUser(userListObj);
+        } else if (data['message_type'] === GREET_MSG) {
+            appendMessage(data['message'], "chat-message-greet");
+
+            const userListObj = Object.entries(JSON.parse(data['current_user_set']));
+            refreshUser(userListObj);
+        } else {
+            appendMessage(data['message']);
         }
+    };
 
-        // 방이름
-        const roomName = {{ room_name_json }};
+    // 소켓이 닫히면 끊는다
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+        appendMessage('\n' + '방에 문제가 생겨 채팅이 종료 되었습니다.' + '\n', "chat-message-center")
+        document.querySelector('#chat-message-refresh').style.display = 'block';
+        document.querySelector('#chat-message-submit').style.display = 'none';
+    };
 
-        // 메시지 타입
-        const LEAVE_MSG = 0;
-        const GREET_MSG = 1;
-        const NORMAL_MSG = 2;
+    // 소켓통신이 연결되면 실행한다.
+    chatSocket.onopen = function (e) {
+        appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
+    }
 
-        // js에서 제공하는 WebSocket 사용
-        const chatSocket = new WebSocket(
-            'ws://' + window.location.host +
-            '/ws/chat/' + roomName);
-
-        // 메세지가 있을 경우? 메시지를 추가한다
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            if (data['message_type'] === NORMAL_MSG) {
-                appendMessage(data['message']);
-            } else if (data['message_type'] === LEAVE_MSG) {
-                appendMessage(data['message'], "chat-message-leave");
-            } else if (data['message_type'] === GREET_MSG) {
-                appendMessage(data['message'], "chat-message-greet");
-            } else {
-                appendMessage(data['message']);
-            }
-        };
-
-        // 소켓이 닫히면 끊는다
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-            appendMessage('\n' + '방에 문제가 생겨 채팅이 종료 되었습니다.' + '\n', "chat-message-center")
-            document.querySelector('#chat-message-refresh').style.display = 'block';
-            document.querySelector('#chat-message-submit').style.display = 'none';
-        };
-
-        // 소켓통신이 연결되면 실행한다.
-        chatSocket.onopen = function (e) {
-            appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
+    // 맨처음에 입력창에 포커스를 하기 위함
+    document.querySelector('#chat-message-input').focus();
+    // 엔터를 누르면 해당 정보가 전송됨
+    document.querySelector('#chat-message-input').onkeyup = function (e) {
+        if (e.keyCode === 13) {  // enter, return
+            document.querySelector('#chat-message-submit').click();
         }
+    };
 
-        // 맨처음에 입력창에 포커스를 하기 위함
+    // 엔터를 하면 해당 input에 있는 정보를 JSON화 시켜서 chatSocket에 전송한다
+    document.querySelector('#chat-message-submit').onclick = function (e) {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
         document.querySelector('#chat-message-input').focus();
-        // 엔터를 누르면 해당 정보가 전송됨
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
 
-        // 엔터를 하면 해당 input에 있는 정보를 JSON화 시켜서 chatSocket에 전송한다
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            document.querySelector('#chat-message-input').focus();
-
-            if (message) {
-                chatSocket.send(JSON.stringify({
-                    'message': message
-                }));
-            }
-            // input 비운다
-            messageInputDom.value = '';
-        };
-    </script>
+        if (message) {
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+        }
+        // input 비운다
+        messageInputDom.value = '';
+    };
+</script>
 </body>
 </html>
