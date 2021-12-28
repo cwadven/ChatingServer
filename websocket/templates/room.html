@@ -62,7 +62,7 @@
 <div id="chat-log">
 </div>
 <div id="container-chat-message-input">
-    <input id="chat-message-input" style="inline-size: inherit;" type="text"/><br/>
+    <input id="chat-message-input" style="inline-size: inherit;" type="text" placeholder="채팅 입력하세요."/><br/>
 </div>
 <div style="margin: 5px;">
     <input style="max-width: 1000px; width: 100%;" id="chat-message-submit" type="button" value="전송"/>
@@ -83,7 +83,6 @@
     }
 
     function refreshUser(userSet) {
-        console.log(userSet)
         document.querySelector('#user-list').innerHTML = "";
         userSet.forEach(([user, time]) => {
             let _p = document.createElement("p");
@@ -124,6 +123,8 @@
         } else {
             appendMessage(data['message']);
         }
+
+        document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
     };
 
     // 소켓이 닫히면 끊는다
