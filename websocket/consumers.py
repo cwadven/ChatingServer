@@ -90,7 +90,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 나가기
     async def bye(self, event):
-        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname)[event['username']]:
+        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname).get(event['username']):
             del self.current_user_set[self.groupname][event['username']]
         current_user_set = json.dumps(self.current_user_set[self.groupname])
 
