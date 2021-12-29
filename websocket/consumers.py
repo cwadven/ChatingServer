@@ -62,13 +62,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = self.scope['user'].username if self.scope['user'].username else str(self.scope['headers'][10][1])[
                                                                                    2:7] + "익명"
         await self.channel_layer.group_send(
-            self.groupname, {'type': 'get_messages', 'message': message, 'username': username}
+            self.groupname, {
+                'type': 'get_messages',
+                'message': message,
+                'username': username
+            }
         )
 
     async def get_messages(self, event):
         message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
+
         await self.send(text_data=json.dumps({
-            'message': message, 'message_type': MESSAGE_TYPE[NORMAL_MSG],
+            'message': message,
+            'message_type': MESSAGE_TYPE[NORMAL_MSG],
+            'username': event['username']
         }))
 
     # 환영
@@ -85,7 +92,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
         await self.send(text_data=json.dumps({
-            'message': message, 'message_type': MESSAGE_TYPE[GREET_MSG], 'current_user_set': current_user_set,
+            'message': message,
+            'message_type': MESSAGE_TYPE[GREET_MSG],
+            'current_user_set': current_user_set,
+            'username': event['username']
         }))
 
     # 나가기
@@ -97,5 +107,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
         await self.send(text_data=json.dumps({
-            'message': message, 'message_type': MESSAGE_TYPE[LEAVE_MSG], 'current_user_set': current_user_set,
+            'message': message,
+            'message_type': MESSAGE_TYPE[LEAVE_MSG],
+            'current_user_set': current_user_set,
+            'username': event['username']
         }))

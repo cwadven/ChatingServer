@@ -32,6 +32,11 @@
             margin: 3px;
         }
 
+        p.chat-self {
+            margin: 3px;
+            font-weight: bold;
+        }
+
         p.chat-message-center {
             margin: 3px;
             text-align: center;
@@ -94,6 +99,8 @@
 
     // 방이름
     const roomName = {{ room_name_json }};
+    // user
+    let userNickname = "";
 
     // 메시지 타입
     const LEAVE_MSG = 0;
@@ -108,8 +115,14 @@
     // 메세지가 있을 경우? 메시지를 추가한다
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
+
         if (data['message_type'] === NORMAL_MSG) {
-            appendMessage(data['message']);
+            // 자기 자신인 경우
+            if (data['username'] === userNickname) {
+                appendMessage(data['message'], "chat-self");
+            } else {
+                appendMessage(data['message']);
+            }
         } else if (data['message_type'] === LEAVE_MSG) {
             appendMessage(data['message'], "chat-message-leave");
 
@@ -117,6 +130,7 @@
             refreshUser(userListObj);
         } else if (data['message_type'] === GREET_MSG) {
             appendMessage(data['message'], "chat-message-greet");
+            userNickname = data['username'];
 
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
