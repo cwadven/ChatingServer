@@ -112,14 +112,18 @@ Project Root
 
 [edit . 2021-12-23]
 
+NOT YET
+
 ## 나도 만들고 싶다 하면!! 이용하는 방법
+
+[edit . 2021-12-29]
 
 ```text
 1. config 파일 안에 ENV.py 를 만들어 자신의 민감한 정보들 예로 SECRET_KEY 를 만들어라
 2. "python manage.py migrate" 로 데이터베이스를 최신화 시켜줘라
 3. "python manage.py createsuperuser" 로 슈퍼 유저를 만들어라
 4. "python manage.py collectstatic" 로 정적 파일을 받아라
-5. Redis 를 설치한 후, Redis 서버를 켜라
-6. Daphne 를 설치하
+5. Redis 를 설치한 후, Redis 서버를 켜라 (포트 6379)
+6. Daphne 를 설치하기
 .... 추후 추가
 ```
