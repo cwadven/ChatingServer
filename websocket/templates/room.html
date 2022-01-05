@@ -138,8 +138,13 @@
 
     // 방이름
     const roomName = {{ room_name_json }};
-    // user
-    let userNickname = null;
+
+    // user 닉네임 설정
+    if (!sessionStorage.getItem('userNickname')) {
+        sessionStorage.setItem('userNickname', Math.random().toString(36).substr(2,11));
+    }
+
+    const userNickname = sessionStorage.getItem('userNickname');
 
     const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
         keyboard: false
@@ -167,6 +172,14 @@
         });
     }
 
+    // 접속 끊길 경우
+    window.addEventListener('beforeunload', function (e) {
+        chatSocket.send(JSON.stringify({
+            'type': LEAVE_MSG,
+            'nickname': userNickname
+        }));
+    });
+
     // 메세지가 있을 경우? 메시지를 추가한다
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
@@ -193,9 +206,7 @@
             refreshUser(userListObj);
         } else if (data['message_type'] === GREET_MSG) { // 참여하는 경우
             appendMessage(data['message'], "chat-message-greet");
-            if (!userNickname) {
-                userNickname = data['username'];
-            } else {
+            if (data['username'] !== userNickname) {
                 // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기
                 new window.Notification(data['username'], {body: `${data['username']} 님이 참가하셨습니다.`});
             }
@@ -232,6 +243,10 @@
     // 소켓통신이 연결되면 실행한다.
     chatSocket.onopen = function (e) {
         appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
+        chatSocket.send(JSON.stringify({
+            'type': GREET_MSG,
+            'nickname': userNickname
+        }));
     }
 
     // 맨처음에 입력창에 포커스를 하기 위함
@@ -251,7 +266,8 @@
 
         if (message) {
             chatSocket.send(JSON.stringify({
-                'message': message
+                'message': message,
+                'nickname': userNickname
             }));
         }
         // input 비운다
