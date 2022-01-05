@@ -68,7 +68,6 @@
     </style>
 </head>
 <body>
-<body>
 <div id="chat-log">
 </div>
 <div id="container-chat-message-input">
@@ -82,7 +81,27 @@
            id="chat-message-refresh" type="button" value="재접속"/>
 </div>
 <div id="user-list"></div>
-</body>
+
+<!-- Modal -->
+<div class="modal fade" id="reconnect-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">🙃 재접속이 필요합니다.</h5>
+            </div>
+            <div class="modal-body">
+                <p>채팅방에 문제가 발생하여 재접속이 필요한 상태입니다~!!</p>
+                <p>5초 뒤, 바로 재접속 됩니다.</p>
+            </div>
+            <div class="text-center mb-3 fw-bold">
+                재 접속까지 <span id="left-second">5</span> 초 남음
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onClick="window.location.reload();">바로 재접속</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     function appendMessage(message, className = "chat-message") {
@@ -102,10 +121,29 @@
         });
     }
 
+    function countDownInnerHtml(startNumber, _dom) {
+        let _startNumber = startNumber;
+
+        const interval = setInterval(() => {
+            _startNumber -= 1;
+            _dom.innerHTML = _startNumber;
+        }, 1000);
+
+        if (_startNumber === 0) {
+            clearInterval(interval);
+        }
+
+        return interval;
+    }
+
     // 방이름
     const roomName = {{ room_name_json }};
     // user
     let userNickname = null;
+
+    const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
+        keyboard: false
+    })
 
     // 메시지 타입
     const LEAVE_MSG = 0;
@@ -119,8 +157,12 @@
         'ws://' + window.location.host +
         '/ws/chat/' + roomName);
 
+    // 재접속하는 모달 창 관리
+    const reConnectModal = document.getElementById('reconnect-modal');
+
+    // Notification 권한 요청
     if (Notification.permission !== "granted") {
-        Notification.requestPermission((permission)=>{
+        Notification.requestPermission((permission) => {
 
         });
     }
@@ -129,7 +171,7 @@
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
 
-        if (data['message_type'] === NORMAL_MSG) {
+        if (data['message_type'] === NORMAL_MSG) { // 일반 메시지 통신
             // 자기 자신인 경우
             if (data['username'] === userNickname) {
                 appendMessage(data['message'], "chat-self");
@@ -144,31 +186,44 @@
                 }
                 appendMessage(data['message']);
             }
-        } else if (data['message_type'] === LEAVE_MSG) {
+        } else if (data['message_type'] === LEAVE_MSG) { // 나가는 경우
             appendMessage(data['message'], "chat-message-leave");
 
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
-        } else if (data['message_type'] === GREET_MSG) {
+        } else if (data['message_type'] === GREET_MSG) { // 참여하는 경우
             appendMessage(data['message'], "chat-message-greet");
             if (!userNickname) {
                 userNickname = data['username'];
+            } else {
+                // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기
+                new window.Notification(data['username'], {body: `${data['username']} 님이 참가하셨습니다.`});
             }
 
-            // 참가 Notification 날리기
-            new window.Notification(data['username'], {body: `${data['username']} 님이 참가하셨습니다.`});
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
         } else {
             appendMessage(data['message']);
         }
-
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
     };
 
     // 소켓이 닫히면 끊는다
     chatSocket.onclose = function (e) {
         console.error('Chat socket closed unexpectedly');
+
+        // 재접속 모달 띄우기
+        reconnectModal.show();
+
+        const left_second_div = document.querySelector("#left-second");
+        const interval = countDownInnerHtml(Number(left_second_div.innerHTML), left_second_div);
+
+        // 5초 뒤에 자동 재접속
+        setTimeout(() => {
+            clearInterval(interval);
+            window.location.reload();
+        }, 5000);
+
         appendMessage('\n' + '방에 문제가 생겨 채팅이 종료 되었습니다.' + '\n', "chat-message-center");
         document.querySelector('#chat-message-refresh').style.display = 'block';
         document.querySelector('#chat-message-submit').style.display = 'none';
@@ -203,5 +258,6 @@
         messageInputDom.value = '';
     };
 </script>
+
 </body>
 </html>
