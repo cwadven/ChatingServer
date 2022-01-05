@@ -155,6 +155,8 @@
                 userNickname = data['username'];
             }
 
+            // 참가 Notification 날리기
+            new window.Notification(data['username'], {body: `${data['username']} 님이 참가하셨습니다.`});
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
         } else {
