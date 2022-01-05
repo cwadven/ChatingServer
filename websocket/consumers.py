@@ -76,8 +76,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
 
         await self.send(text_data=json.dumps({
+            'type': MESSAGE_TYPE[NORMAL_MSG],
             'message': message,
-            'message_type': MESSAGE_TYPE[NORMAL_MSG],
             'username': event['username']
         }))
 
@@ -95,8 +95,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
         await self.send(text_data=json.dumps({
+            'type': MESSAGE_TYPE[GREET_MSG],
             'message': message,
-            'message_type': MESSAGE_TYPE[GREET_MSG],
             'current_user_set': current_user_set,
             'username': event['username']
         }))
@@ -111,8 +111,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
         await self.send(text_data=json.dumps({
+            'type': MESSAGE_TYPE[LEAVE_MSG],
             'message': message,
-            'message_type': MESSAGE_TYPE[LEAVE_MSG],
             'current_user_set': current_user_set,
             'username': event['username']
         }))

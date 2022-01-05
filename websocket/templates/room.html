@@ -184,7 +184,7 @@
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
 
-        if (data['message_type'] === NORMAL_MSG) { // 일반 메시지 통신
+        if (data['type'] === NORMAL_MSG) { // 일반 메시지 통신
             // 자기 자신인 경우
             if (data['username'] === userNickname) {
                 appendMessage(data['message'], "chat-self");
@@ -199,12 +199,12 @@
                 }
                 appendMessage(data['message']);
             }
-        } else if (data['message_type'] === LEAVE_MSG) { // 나가는 경우
+        } else if (data['type'] === LEAVE_MSG) { // 나가는 경우
             appendMessage(data['message'], "chat-message-leave");
 
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
-        } else if (data['message_type'] === GREET_MSG) { // 참여하는 경우
+        } else if (data['type'] === GREET_MSG) { // 참여하는 경우
             appendMessage(data['message'], "chat-message-greet");
             if (data['username'] !== userNickname) {
                 // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기
