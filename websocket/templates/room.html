@@ -169,12 +169,12 @@
     }
 
     // 접속 끊길 경우
-    window.addEventListener('beforeunload', function (e) {
-        chatSocket.send(JSON.stringify({
-            'type': LEAVE_MSG,
-            'nickname': userNickname
-        }));
-    });
+    // window.addEventListener('beforeunload', function (e) {
+    //     chatSocket.send(JSON.stringify({
+    //         'type': LEAVE_MSG,
+    //         'nickname': userNickname
+    //     }));
+    // });
 
     // 메세지가 있을 경우? 메시지를 추가한다
     chatSocket.onmessage = function (e) {
@@ -244,10 +244,10 @@
     // 소켓통신이 연결되면 실행한다.
     chatSocket.onopen = function (e) {
         appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
-        chatSocket.send(JSON.stringify({
-            'type': GREET_MSG,
-            'nickname': userNickname
-        }));
+        // chatSocket.send(JSON.stringify({
+        //     'type': GREET_MSG,
+        //     'nickname': userNickname
+        // }));
     }
 
     // 맨처음에 입력창에 포커스를 하기 위함

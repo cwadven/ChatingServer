@@ -34,8 +34,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         await self.accept()
 
+        # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
+        if self.current_user_set.get(self.groupname):
+            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
+                '%Y-%m-%d %H:%M:%S')
+        else:
+            self.current_user_set[self.groupname] = {}
+            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
+                '%Y-%m-%d %H:%M:%S')
+
+        await self.channel_layer.group_send(
+            self.groupname, {
+                'type': 'greet',
+                'username': self.scope['nickname'],
+            }
+        )
+
     # websocket 연결 종료 시 실행
     async def disconnect(self, close_code):
+        await self.channel_layer.group_send(
+            self.groupname, {
+                'type': 'bye',
+                'username': self.scope['nickname']
+            }
+        )
+
+        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname).get(self.scope['nickname']):
+            del self.current_user_set[self.groupname][self.scope['nickname']]
+
         # Leave room group
         await self.channel_layer.group_discard(
             self.groupname,
@@ -52,29 +78,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
         username = self.scope['user'].username if self.scope['user'].username else self.scope['nickname']
 
-        # 첫 접속
-        if text_data_json.get("type") == MESSAGE_TYPE[GREET_MSG]:
-            await self.channel_layer.group_send(
-                self.groupname, {
-                    'type': 'greet',
-                    'username': username,
-                }
-            )
-        elif text_data_json.get("type") == MESSAGE_TYPE[LEAVE_MSG]: # 나갈 때
-            await self.channel_layer.group_send(
-                self.groupname, {
-                    'type': 'bye',
-                    'username': username
-                }
-            )
-        else: # 일반 메시지
-            await self.channel_layer.group_send(
-                self.groupname, {
-                    'type': 'get_messages',
-                    'message': message,
-                    'username': username
-                }
-            )
+        await self.channel_layer.group_send(
+            self.groupname, {
+                'type': 'get_messages',
+                'message': message,
+                'username': username
+            }
+        )
 
     async def get_messages(self, event):
         message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
@@ -87,13 +97,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 환영
     async def greet(self, event):
-        # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
-        if self.current_user_set.get(self.groupname):
-            self.current_user_set[self.groupname][event['username']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        else:
-            self.current_user_set[self.groupname] = {}
-            self.current_user_set[self.groupname][event['username']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-
         current_user_set = json.dumps(self.current_user_set[self.groupname])
 
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
@@ -107,9 +110,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 나가기
     async def bye(self, event):
-        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname).get(event['username']):
-            del self.current_user_set[self.groupname][event['username']]
-
         current_user_set = json.dumps(self.current_user_set[self.groupname])
 
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
