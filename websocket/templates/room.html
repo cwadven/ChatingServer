@@ -53,6 +53,12 @@
             color: #e33355;
         }
 
+        p.chat-message-self-host{
+            margin: 3px;
+            font-weight: bold;
+            color: #e33355;
+        }
+
         p.chat-message-center {
             margin: 3px;
             text-align: center;
@@ -164,12 +170,17 @@
         const Minute = (currentDate.getMinutes() < 10 ? "0" : "") + currentDate.getMinutes();
         const Second = (currentDate.getSeconds() < 10 ? "0" : "") + currentDate.getSeconds();
 
-        const myMessage = `[${Year}-${Month}-${Day} ${Hour}:${Minute}:${Second}] ${userNickname}: ${message}`
+        let myMessage = `[${Year}-${Month}-${Day} ${Hour}:${Minute}:${Second}] ${userNickname}: ${message}`
 
         document.querySelector('#chat-message-input').focus();
 
         if (message) {
-            appendMessage(myMessage, "chat-self");
+            if (userType === 1) {
+                myMessage = '[운영자] ' + myMessage
+                appendMessage(myMessage, "chat-message-self-host");
+            } else {
+                appendMessage(myMessage, "chat-self");
+            }
             chatSocket.send(JSON.stringify({
                 'message': message,
                 'nickname': userNickname
@@ -185,6 +196,7 @@
 
     // user 닉네임 설정
     let userNickname = null;
+    let userType = null;
 
     const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
         keyboard: false
@@ -241,6 +253,9 @@
             // 닉네임 설정
             if (!userNickname) {
                 userNickname = data['username'];
+            }
+            if (!userType) {
+                userType = data['user_type'];
             }
             if (data['username'] !== userNickname) {
                 // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기

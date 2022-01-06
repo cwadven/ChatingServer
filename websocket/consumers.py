@@ -59,10 +59,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         self.add_current_user_to_group()
 
+        user_type = NORMAL_USER
+        if self.scope['client'][0] == "192.168.0.19":
+            user_type = HOST_USER
+
         await self.channel_layer.group_send(
             self.groupname, {
                 'type': 'greet',
                 'username': self.scope['nickname'],
+                'user_type': user_type,
             }
         )
 
@@ -131,7 +136,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'type': MESSAGE_TYPE[GREET_MSG],
             'message': message,
             'current_user_set': current_user_set,
-            'username': event['username']
+            'username': event['username'],
+            'user_type': event['user_type']
         }))
 
     # 나가기
