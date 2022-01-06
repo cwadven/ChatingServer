@@ -146,6 +146,34 @@
         return interval;
     }
 
+    function sendMessage() {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
+
+        const currentDate = new Date();
+
+        const Year = currentDate.getFullYear();
+        const Month = (currentDate.getMonth() + 1 < 10 ? "0" : "") + (currentDate.getMonth() + 1);
+        const Day = (currentDate.getDate() < 10 ? "0" : "") + currentDate.getDate();
+        const Hour = (currentDate.getHours() < 10 ? "0" : "") + currentDate.getHours();
+        const Minute = (currentDate.getMinutes() < 10 ? "0" : "") + currentDate.getMinutes();
+        const Second = (currentDate.getSeconds() < 10 ? "0" : "") + currentDate.getSeconds();
+
+        const myMessage = `[${Year}-${Month}-${Day} ${Hour}:${Minute}:${Second}] ${userNickname}: ${message}`
+
+        document.querySelector('#chat-message-input').focus();
+
+        if (message) {
+            appendMessage(myMessage, "chat-self");
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'nickname': userNickname
+            }));
+        }
+        // input 비운다
+        messageInputDom.value = '';
+    }
+
     // 방이름
     const roomName = {{ room_name_json }};
 
@@ -183,20 +211,15 @@
         const data = JSON.parse(e.data);
 
         if (data['type'] === NORMAL_MSG) { // 일반 메시지 통신
-            // 자기 자신인 경우
-            if (data['username'] === userNickname) {
-                appendMessage(data['message'], "chat-self");
-            } else {
-                if (isNotificationAble) {
-                    new window.Notification(data['username'], {body: data['message']});
+            if (isNotificationAble) {
+                new window.Notification(data['username'], {body: data['message']});
 
-                    isNotificationAble = false;
-                    setTimeout(() => {
-                        isNotificationAble = true;
-                    }, 5000);
-                }
-                appendMessage(data['message']);
+                isNotificationAble = false;
+                setTimeout(() => {
+                    isNotificationAble = true;
+                }, 5000);
             }
+            appendMessage(data['message']);
         } else if (data['type'] === LEAVE_MSG) { // 나가는 경우
             appendMessage(data['message'], "chat-message-leave");
 
@@ -216,9 +239,8 @@
 
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
-        } else {
-            appendMessage(data['message']);
         }
+
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
     };
 
@@ -259,18 +281,7 @@
 
     // 엔터를 하면 해당 input에 있는 정보를 JSON화 시켜서 chatSocket에 전송한다
     document.querySelector('#chat-message-submit').onclick = function (e) {
-        const messageInputDom = document.querySelector('#chat-message-input');
-        const message = messageInputDom.value;
-        document.querySelector('#chat-message-input').focus();
-
-        if (message) {
-            chatSocket.send(JSON.stringify({
-                'message': message,
-                'nickname': userNickname
-            }));
-        }
-        // input 비운다
-        messageInputDom.value = '';
+        sendMessage();
     };
 </script>
 

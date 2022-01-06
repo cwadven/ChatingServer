@@ -94,18 +94,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.groupname, {
                 'type': 'get_messages',
                 'message': message,
-                'username': username
+                'username': username,
+                'sender_channel_name': self.channel_name
             }
         )
 
     async def get_messages(self, event):
         message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
 
-        await self.send(text_data=json.dumps({
-            'type': MESSAGE_TYPE[NORMAL_MSG],
-            'message': message,
-            'username': event['username']
-        }))
+        # 나를 제외하고 다른 사람에게 보내기
+        if self.channel_name != event['sender_channel_name']:
+            await self.send(text_data=json.dumps({
+                'type': MESSAGE_TYPE[NORMAL_MSG],
+                'message': message,
+                'username': event['username']
+            }))
 
     # 환영
     async def greet(self, event):
