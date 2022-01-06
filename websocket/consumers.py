@@ -2,6 +2,8 @@ import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
+from common_library import create_random_string
+
 LEAVE_MSG = 0
 GREET_MSG = 1
 NORMAL_MSG = 2
@@ -22,6 +24,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # path('ws/test/<str:username>/',consumers.ChatConsumer),
         self.groupname = self.scope['url_route']['kwargs']['room']
 
+        # 접속시 시 바로 닉네임 설정하기
+        self.scope['nickname'] = create_random_string(10)
+
         # Join room group
         await self.channel_layer.group_add(
             self.groupname,
@@ -41,12 +46,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json.get('message')
-        nickname = text_data_json.get('nickname')
 
         # Send message to room group
         # {}가 chat_message event 매소드이다
         # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
-        username = self.scope['user'].username if self.scope['user'].username else nickname
+        username = self.scope['user'].username if self.scope['user'].username else self.scope['nickname']
 
         # 첫 접속
         if text_data_json.get("type") == MESSAGE_TYPE[GREET_MSG]:

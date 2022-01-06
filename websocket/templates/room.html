@@ -140,11 +140,7 @@
     const roomName = {{ room_name_json }};
 
     // user 닉네임 설정
-    if (!sessionStorage.getItem('userNickname')) {
-        sessionStorage.setItem('userNickname', Math.random().toString(36).substr(2,11));
-    }
-
-    const userNickname = sessionStorage.getItem('userNickname');
+    let userNickname = null;
 
     const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
         keyboard: false
@@ -205,6 +201,11 @@
             const userListObj = Object.entries(JSON.parse(data['current_user_set']));
             refreshUser(userListObj);
         } else if (data['type'] === GREET_MSG) { // 참여하는 경우
+            // 닉네임 설정
+            if (!userNickname) {
+                userNickname = data['username'];
+            }
+
             appendMessage(data['message'], "chat-message-greet");
             if (data['username'] !== userNickname) {
                 // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기
