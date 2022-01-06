@@ -14,6 +14,9 @@ MESSAGE_TYPE = {
     NORMAL_MSG: NORMAL_MSG,
 }
 
+NORMAL_USER = 0
+HOST_USER = 1
+
 
 class ChatConsumer(AsyncWebsocketConsumer):
     current_user_set = {}
@@ -84,30 +87,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json.get('message')
-
+        user_type = NORMAL_USER
         # Send message to room group
         # {}가 chat_message event 매소드이다
         # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
         username = self.scope['user'].username if self.scope['user'].username else self.scope['nickname']
+
+        if self.scope['client'][0] == "192.168.0.19":
+            user_type = HOST_USER
 
         await self.channel_layer.group_send(
             self.groupname, {
                 'type': 'get_messages',
                 'message': message,
                 'username': username,
-                'sender_channel_name': self.channel_name
+                'sender_channel_name': self.channel_name,
+                'user_type': user_type,
             }
         )
 
     async def get_messages(self, event):
         message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
 
+        if event['user_type'] == HOST_USER:
+            message = "[운영자] " + message
+
         # 나를 제외하고 다른 사람에게 보내기
         if self.channel_name != event['sender_channel_name']:
             await self.send(text_data=json.dumps({
                 'type': MESSAGE_TYPE[NORMAL_MSG],
                 'message': message,
-                'username': event['username']
+                'username': event['username'],
+                'user_type': event['user_type'],
             }))
 
     # 환영

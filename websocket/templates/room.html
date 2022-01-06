@@ -48,6 +48,11 @@
             font-weight: bold;
         }
 
+        p.chat-message-host{
+            margin: 3px;
+            color: #e33355;
+        }
+
         p.chat-message-center {
             margin: 3px;
             text-align: center;
@@ -172,6 +177,7 @@
         }
         // input 비운다
         messageInputDom.value = '';
+        document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
     }
 
     // 방이름
@@ -208,9 +214,14 @@
 
     // 메세지가 있을 경우? 메시지를 추가한다
     chatSocket.onmessage = function (e) {
+        let userListObj;
         const data = JSON.parse(e.data);
 
-        if (data['type'] === NORMAL_MSG) { // 일반 메시지 통신
+        if (data['current_user_set']) {
+            userListObj = Object.entries(JSON.parse(data['current_user_set']));
+        }
+
+        if (data['type'] === NORMAL_MSG) {
             if (isNotificationAble) {
                 new window.Notification(data['username'], {body: data['message']});
 
@@ -219,25 +230,27 @@
                     isNotificationAble = true;
                 }, 5000);
             }
-            appendMessage(data['message']);
-        } else if (data['type'] === LEAVE_MSG) { // 나가는 경우
-            appendMessage(data['message'], "chat-message-leave");
 
-            const userListObj = Object.entries(JSON.parse(data['current_user_set']));
-            refreshUser(userListObj);
-        } else if (data['type'] === GREET_MSG) { // 참여하는 경우
+            if (data['user_type'] === 1) {
+                appendMessage(data['message'], "chat-message-host");
+            } else {
+                appendMessage(data['message']);
+            }
+
+        } else if (data['type'] === GREET_MSG) {
             // 닉네임 설정
             if (!userNickname) {
                 userNickname = data['username'];
             }
-
-            appendMessage(data['message'], "chat-message-greet");
             if (data['username'] !== userNickname) {
                 // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기
                 new window.Notification(data['username'], {body: `${data['username']} 님이 참가하셨습니다.`});
             }
 
-            const userListObj = Object.entries(JSON.parse(data['current_user_set']));
+            appendMessage(data['message'], "chat-message-greet");
+            refreshUser(userListObj);
+        } else if (data['type'] === LEAVE_MSG) {
+            appendMessage(data['message'], "chat-message-leave");
             refreshUser(userListObj);
         }
 
