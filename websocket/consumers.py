@@ -18,6 +18,26 @@ MESSAGE_TYPE = {
 class ChatConsumer(AsyncWebsocketConsumer):
     current_user_set = {}
 
+    # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
+    def add_current_user_to_group(self):
+        if self.current_user_set.get(self.groupname):
+            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
+                '%Y-%m-%d %H:%M:%S')
+        else:
+            self.current_user_set[self.groupname] = {}
+            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
+                '%Y-%m-%d %H:%M:%S')
+
+    def remove_current_user_to_group(self):
+        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname).get(self.scope['nickname']):
+            del self.current_user_set[self.groupname][self.scope['nickname']]
+
+    def get_current_group_user_count(self):
+        if self.current_user_set.get(self.groupname):
+            return len(self.current_user_set.get(self.groupname))
+
+        return 0
+
     # websocket 연결 시 실행
     async def connect(self):
         # chat/routing.py 에 있는
@@ -34,14 +54,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         await self.accept()
 
-        # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
-        if self.current_user_set.get(self.groupname):
-            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
-                '%Y-%m-%d %H:%M:%S')
-        else:
-            self.current_user_set[self.groupname] = {}
-            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
-                '%Y-%m-%d %H:%M:%S')
+        self.add_current_user_to_group()
 
         await self.channel_layer.group_send(
             self.groupname, {
@@ -59,8 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname).get(self.scope['nickname']):
-            del self.current_user_set[self.groupname][self.scope['nickname']]
+        self.remove_current_user_to_group()
 
         # Leave room group
         await self.channel_layer.group_discard(
