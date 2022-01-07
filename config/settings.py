@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from config.ENV import MY_SECRET_KEY
+from config.ENV import MY_SECRET_KEY, REDIS_IP
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -42,7 +42,10 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            # "hosts": [('127.0.0.1', 6379)],
+            # 엔드 포인트
+            "hosts": [(REDIS_IP if SERVER_ENV == 'Main' else '127.0.0.1', 6379)],
+            # "hosts": [('test-bear-u-chat-cache-server.oxup7x.ng.0001.apn2.cache.amazonaws.com', 6379)],
         },
     },
 }
@@ -81,12 +84,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
