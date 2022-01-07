@@ -48,12 +48,12 @@
             font-weight: bold;
         }
 
-        p.chat-message-host{
+        p.chat-message-host {
             margin: 3px;
             color: #e33355;
         }
 
-        p.chat-message-self-host{
+        p.chat-message-self-host {
             margin: 3px;
             font-weight: bold;
             color: #e33355;
@@ -207,17 +207,8 @@
     const GREET_MSG = 1;
     const NORMAL_MSG = 2;
 
-    let isNotificationAble = true;
-
     // 재접속하는 모달 창 관리
     const reConnectModal = document.getElementById('reconnect-modal');
-
-    // Notification 권한 요청
-    if (Notification.permission !== "granted") {
-        Notification.requestPermission((permission) => {
-
-        });
-    }
 
     // 맨처음에 입력창에 포커스를 하기 위함
     document.querySelector('#chat-message-input').focus();
@@ -249,15 +240,6 @@
         }
 
         if (data['type'] === NORMAL_MSG) {
-            if (isNotificationAble) {
-                new window.Notification(data['username'], {body: data['message']});
-
-                isNotificationAble = false;
-                setTimeout(() => {
-                    isNotificationAble = true;
-                }, 5000);
-            }
-
             if (data['user_type'] === 1) {
                 appendMessage(data['message'], "chat-message-host");
             } else {
@@ -272,10 +254,6 @@
             if (!userType) {
                 userType = data['user_type'];
             }
-            if (data['username'] !== userNickname) {
-                // 내가 아닌 다른 사람이 참가했을 경우 Notification 날리기
-                new window.Notification(data['username'], {body: `${data['username']} 님이 참가하셨습니다.`});
-            }
 
             appendMessage(data['message'], "chat-message-greet");
             refreshUser(userListObj);
@@ -287,30 +265,37 @@
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
     };
 
-    // 소켓이 닫히면 끊는다
-    chatSocket.onclose = function (e) {
-        console.error('Chat socket closed unexpectedly');
-
-        // 재접속 모달 띄우기
-        reconnectModal.show();
-
-        const left_second_div = document.querySelector("#left-second");
-        const interval = countDownInnerHtml(Number(left_second_div.innerHTML), left_second_div);
-
-        // 5초 뒤에 자동 재접속
-        setTimeout(() => {
-            clearInterval(interval);
-            window.location.reload();
-        }, 5000);
-
-        appendMessage('\n' + '방에 문제가 생겨 채팅이 종료 되었습니다.' + '\n', "chat-message-center");
-        document.querySelector('#chat-message-refresh').style.display = 'block';
-        document.querySelector('#chat-message-submit').style.display = 'none';
-    };
 
     // 소켓통신이 연결되면 실행한다.
     chatSocket.onopen = function (e) {
         appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
+    }
+
+    window.onbeforeunload = function () {
+        try {
+            // 소켓이 닫히면 끊는다
+            chatSocket.onclose = function (e) {
+                console.error('Chat socket closed unexpectedly');
+
+                // 재접속 모달 띄우기
+                reconnectModal.show();
+
+                const left_second_div = document.querySelector("#left-second");
+                const interval = countDownInnerHtml(Number(left_second_div.innerHTML), left_second_div);
+
+                // 5초 뒤에 자동 재접속
+                setTimeout(() => {
+                    clearInterval(interval);
+                    window.location.reload();
+                }, 5000);
+
+                appendMessage('\n' + '방에 문제가 생겨 채팅이 종료 되었습니다.' + '\n', "chat-message-center");
+                document.querySelector('#chat-message-refresh').style.display = 'block';
+                document.querySelector('#chat-message-submit').style.display = 'none';
+            };
+            chatSocket.close();
+        } catch (e) {
+        }
     }
 </script>
 
