@@ -228,7 +228,7 @@
 
     // js에서 제공하는 WebSocket 사용
     const chatSocket = new WebSocket(
-        'ws://' + window.location.host +
+        'wss://' + window.location.host +
         '/ws/chat/' + roomName);
 
     // 메세지가 있을 경우? 메시지를 추가한다
@@ -258,11 +258,9 @@
 
             appendMessage(data['message'], "chat-message-greet");
             refreshUser(userListObj);
-            console.log(data);
         } else if (data['type'] === LEAVE_MSG) {
             appendMessage(data['message'], "chat-message-leave");
             refreshUser(userListObj);
-            console.log(data);
         }
 
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
