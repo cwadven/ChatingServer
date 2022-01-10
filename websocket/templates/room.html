@@ -204,6 +204,11 @@
     const NORMAL_MSG = 2;
 
     // 재접속하는 모달 창 관리
+    const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
+        keyboard: false
+    })
+
+    // 재접속하는 모달 창 관리
     const reConnectModal = document.getElementById('reconnect-modal');
 
     // 맨처음에 입력창에 포커스를 하기 위함
@@ -223,7 +228,7 @@
 
     // js에서 제공하는 WebSocket 사용
     const chatSocket = new WebSocket(
-        'wss://' + window.location.host +
+        'ws://' + window.location.host +
         '/ws/chat/' + roomName);
 
     // 메세지가 있을 경우? 메시지를 추가한다
@@ -232,7 +237,7 @@
         const data = JSON.parse(e.data);
 
         if (data['current_user_set']) {
-            userListObj = Object.entries(JSON.parse(data['current_user_set']));
+            userListObj = Object.entries(data['current_user_set']);
         }
 
         if (data['type'] === NORMAL_MSG) {
@@ -253,9 +258,11 @@
 
             appendMessage(data['message'], "chat-message-greet");
             refreshUser(userListObj);
+            console.log(data);
         } else if (data['type'] === LEAVE_MSG) {
             appendMessage(data['message'], "chat-message-leave");
             refreshUser(userListObj);
+            console.log(data);
         }
 
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
@@ -266,6 +273,26 @@
     chatSocket.onopen = function (e) {
         appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
     }
+
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+
+        // 재접속 모달 띄우기
+        reconnectModal.show();
+
+        const left_second_div = document.querySelector("#left-second");
+        const interval = countDownInnerHtml(Number(left_second_div.innerHTML), left_second_div);
+
+        // 5초 뒤에 자동 재접속
+        setTimeout(function () {
+            clearInterval(interval);
+            window.location.reload();
+        }, 5000);
+
+        appendMessage('\n' + '방에 문제가 생겨 채팅이 종료 되었습니다.' + '\n', "chat-message-center");
+        document.querySelector('#chat-message-refresh').style.display = 'block';
+        document.querySelector('#chat-message-submit').style.display = 'none';
+    };
 
     window.onbeforeunload = function () {
         try {
