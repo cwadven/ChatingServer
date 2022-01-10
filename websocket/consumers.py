@@ -1,7 +1,7 @@
 import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
-import json
 
+import json
 from common_library import create_random_string
 
 LEAVE_MSG = 0
@@ -23,21 +23,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
     def add_current_user_to_group(self):
-        if self.current_user_set.get(self.groupname):
-            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
-                '%Y-%m-%d %H:%M:%S')
+        user_set = getattr(self.channel_layer, self.groupname, {})
+
+        # if not user_count:
+        #     setattr(self.channel_layer, self.groupname, {self.scope['nickname']: datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
+        # else:
+        #     setattr(self.channel_layer, self.groupname, user_count)
+
+        if user_set:
+            user_set[self.scope['nickname']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         else:
-            self.current_user_set[self.groupname] = {}
-            self.current_user_set[self.groupname][self.scope['nickname']] = datetime.datetime.today().strftime(
-                '%Y-%m-%d %H:%M:%S')
+            setattr(self.channel_layer, self.groupname,
+                    {self.scope['nickname']: datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
+
 
     def remove_current_user_to_group(self):
-        if self.current_user_set.get(self.groupname) and self.current_user_set.get(self.groupname).get(self.scope['nickname']):
-            del self.current_user_set[self.groupname][self.scope['nickname']]
+        user_set = getattr(self.channel_layer, self.groupname, None)
+
+        if user_set and user_set.get(self.scope['nickname']):
+            del user_set[self.scope['nickname']]
 
     def get_current_group_user_count(self):
-        if self.current_user_set.get(self.groupname):
-            return len(self.current_user_set.get(self.groupname))
+        user_set = getattr(self.channel_layer, self.groupname, None)
+
+        if user_set:
+            return len(user_set)
 
         return 0
 
@@ -76,7 +86,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             self.groupname, {
                 'type': 'bye',
-                'username': self.scope['nickname']
+                'username': self.scope['nickname'],
             }
         )
 
@@ -128,8 +138,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 환영
     async def greet(self, event):
-        current_user_set = json.dumps(self.current_user_set[self.groupname])
-
+        current_user_set = getattr(self.channel_layer, self.groupname, {})
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
         await self.send(text_data=json.dumps({
@@ -137,18 +146,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'current_user_set': current_user_set,
             'username': event['username'],
-            'user_type': event['user_type']
+            'user_type': event['user_type'],
         }))
 
     # 나가기
     async def bye(self, event):
-        current_user_set = json.dumps(self.current_user_set[self.groupname])
-
+        current_user_set = getattr(self.channel_layer, self.groupname, {})
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
         await self.send(text_data=json.dumps({
             'type': MESSAGE_TYPE[LEAVE_MSG],
             'message': message,
             'current_user_set': current_user_set,
-            'username': event['username']
+            'username': event['username'],
         }))
