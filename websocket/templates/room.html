@@ -124,7 +124,7 @@
 </div>
 
 <script>
-    function appendMessage(message, className = "chat-message") {
+    function appendMessage(message, className) {
         let _p = document.createElement("p");
         _p.className = className;
         _p.innerHTML = message;
@@ -145,7 +145,7 @@
     function countDownInnerHtml(startNumber, _dom) {
         let _startNumber = startNumber;
 
-        const interval = setInterval(() => {
+        const interval = setInterval(function () {
             _startNumber -= 1;
             _dom.innerHTML = _startNumber;
         }, 1000);
@@ -198,10 +198,6 @@
     let userNickname = null;
     let userType = null;
 
-    const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
-        keyboard: false
-    })
-
     // 메시지 타입
     const LEAVE_MSG = 0;
     const GREET_MSG = 1;
@@ -227,7 +223,7 @@
 
     // js에서 제공하는 WebSocket 사용
     const chatSocket = new WebSocket(
-        'ws://' + window.location.host +
+        'wss://' + window.location.host +
         '/ws/chat/' + roomName);
 
     // 메세지가 있을 경우? 메시지를 추가한다
@@ -243,7 +239,7 @@
             if (data['user_type'] === 1) {
                 appendMessage(data['message'], "chat-message-host");
             } else {
-                appendMessage(data['message']);
+                appendMessage(data['message'], "chat-message");
             }
 
         } else if (data['type'] === GREET_MSG) {
@@ -278,13 +274,13 @@
                 console.error('Chat socket closed unexpectedly');
 
                 // 재접속 모달 띄우기
-                reconnectModal.show();
+                // reconnectModal.show();
 
                 const left_second_div = document.querySelector("#left-second");
                 const interval = countDownInnerHtml(Number(left_second_div.innerHTML), left_second_div);
 
                 // 5초 뒤에 자동 재접속
-                setTimeout(() => {
+                setTimeout(function () {
                     clearInterval(interval);
                     window.location.reload();
                 }, 5000);
