@@ -129,7 +129,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
         username = self.scope['nickname']
 
-        if self.scope['client'][0] == "192.168.0.19":
+        if username == "root":
             user_type = HOST_USER
 
         await self.channel_layer.group_send(
