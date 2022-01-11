@@ -25,11 +25,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def add_current_user_to_group(self):
         user_set = getattr(self.channel_layer, self.groupname, {})
 
-        # if not user_count:
-        #     setattr(self.channel_layer, self.groupname, {self.scope['nickname']: datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
-        # else:
-        #     setattr(self.channel_layer, self.groupname, user_count)
-
         if user_set:
             user_set[self.scope['nickname']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         else:
@@ -58,7 +53,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.groupname = self.scope['url_route']['kwargs']['room']
 
         # 접속시 시 바로 닉네임 설정하기
-        self.scope['nickname'] = create_random_string(10)
+        self.scope['nickname'] = self.scope['user'].username if self.scope['user'].username else create_random_string(10)
 
         # Join room group
         await self.channel_layer.group_add(
@@ -106,7 +101,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Send message to room group
         # {}가 chat_message event 매소드이다
         # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
-        username = self.scope['user'].username if self.scope['user'].username else self.scope['nickname']
+        username = self.scope['nickname']
 
         if self.scope['client'][0] == "192.168.0.19":
             user_type = HOST_USER
