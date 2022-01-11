@@ -258,9 +258,11 @@
 
             appendMessage(data['message'], "chat-message-greet");
             refreshUser(userListObj);
+            document.querySelector('#user-count').innerHTML = data['current_user_count'];
         } else if (data['type'] === LEAVE_MSG) {
             appendMessage(data['message'], "chat-message-leave");
             refreshUser(userListObj);
+            document.querySelector('#user-count').innerHTML = data['current_user_count'];
         }
 
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;

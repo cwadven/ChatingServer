@@ -3,6 +3,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 import json
 from common_library import create_random_string
+from websocket.models import GroupCount
+from asgiref.sync import sync_to_async
 
 LEAVE_MSG = 0
 GREET_MSG = 1
@@ -22,7 +24,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     current_user_set = {}
 
     # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
+    @sync_to_async
     def add_current_user_to_group(self):
+        GroupCount.objects.create(
+            nickname=self.scope['nickname'],
+            groupname=self.groupname
+        )
+
         user_set = getattr(self.channel_layer, self.groupname, {})
 
         if user_set:
@@ -31,20 +39,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
             setattr(self.channel_layer, self.groupname,
                     {self.scope['nickname']: datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
 
-
+    @sync_to_async
     def remove_current_user_to_group(self):
+        GroupCount.objects.filter(
+            nickname=self.scope['nickname'],
+            groupname=self.groupname
+        ).delete()
+
         user_set = getattr(self.channel_layer, self.groupname, None)
 
         if user_set and user_set.get(self.scope['nickname']):
             del user_set[self.scope['nickname']]
 
+    @sync_to_async
     def get_current_group_user_count(self):
-        user_set = getattr(self.channel_layer, self.groupname, None)
-
-        if user_set:
-            return len(user_set)
-
-        return 0
+        return GroupCount.objects.filter(
+            groupname=self.groupname
+        ).count()
 
     # websocket 연결 시 실행
     async def connect(self):
@@ -62,7 +73,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         await self.accept()
 
-        self.add_current_user_to_group()
+        await self.add_current_user_to_group()
 
         user_type = NORMAL_USER
         if self.scope['client'][0] == "192.168.0.19":
@@ -85,7 +96,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        self.remove_current_user_to_group()
+        await self.remove_current_user_to_group()
 
         # Leave room group
         await self.channel_layer.group_discard(
@@ -136,10 +147,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         current_user_set = getattr(self.channel_layer, self.groupname, {})
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
 
+        current_user_count = await self.get_current_group_user_count()
+
         await self.send(text_data=json.dumps({
             'type': MESSAGE_TYPE[GREET_MSG],
             'message': message,
             'current_user_set': current_user_set,
+            'current_user_count': current_user_count,
             'username': event['username'],
             'user_type': event['user_type'],
         }))
@@ -149,9 +163,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         current_user_set = getattr(self.channel_layer, self.groupname, {})
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
 
+        current_user_count = await self.get_current_group_user_count()
+
         await self.send(text_data=json.dumps({
             'type': MESSAGE_TYPE[LEAVE_MSG],
             'message': message,
             'current_user_set': current_user_set,
+            'current_user_count': current_user_count,
             'username': event['username'],
         }))
