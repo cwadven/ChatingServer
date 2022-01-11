@@ -42,10 +42,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user_set = getattr(self.channel_layer, self.groupname, {})
 
         if user_set:
-            user_set[self.scope['nickname']] = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            user_set[self.scope['nickname']] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         else:
             setattr(self.channel_layer, self.groupname,
-                    {self.scope['nickname']: datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
+                    {self.scope['nickname']: datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
 
     @sync_to_async
     def remove_current_user_to_group(self):
@@ -143,7 +143,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def get_messages(self, event):
-        message = f"[{datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
+        message = f"[{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
 
         if event['user_type'] == HOST_USER:
             message = "[운영자] " + message
