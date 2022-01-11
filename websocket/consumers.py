@@ -8,7 +8,7 @@ from django.db.models import DateTimeField, CharField
 from django.db.models.functions import Cast, TruncSecond
 
 from common_library import create_random_string
-from websocket.models import GroupCount
+from websocket.models import GroupCount, GroupChatLog
 from asgiref.sync import sync_to_async
 
 
@@ -69,6 +69,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ))
 
         return qs
+
+    @sync_to_async
+    def create_chat_log(self, username, message):
+        GroupChatLog.objects.create(
+            nickname=username,
+            groupname=self.groupname,
+            content=message
+        )
 
     # websocket 연결 시 실행
     async def connect(self):
@@ -135,6 +143,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if username == "root":
             user_type = HOST_USER
+
+        self.create_chat_log(username, message)
 
         await self.channel_layer.group_send(
             self.groupname, {
