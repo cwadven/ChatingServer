@@ -105,6 +105,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # websocket 연결 종료 시 실행
     async def disconnect(self, close_code):
+        await self.remove_current_user_to_group()
+
         current_user_set = await self.get_current_group_user()
 
         await self.channel_layer.group_send(
@@ -114,8 +116,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'current_user_set': current_user_set,
             }
         )
-
-        await self.remove_current_user_to_group()
 
         # Leave room group
         await self.channel_layer.group_discard(
