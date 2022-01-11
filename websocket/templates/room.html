@@ -133,10 +133,10 @@
 
     function refreshUser(userSet) {
         document.querySelector('#user-list').innerHTML = "";
-        userSet.forEach(([user, time]) => {
+        userSet.forEach(({nickname, joined_time}) => {
             let _p = document.createElement("p");
             _p.className = "each-user";
-            _p.innerHTML = "[(참여시간) " + time + "] " + user;
+            _p.innerHTML = "[(참여시간) " + joined_time + "] " + nickname;
             document.querySelector('#user-list').appendChild(_p);
         });
         document.querySelector('#user-count').innerHTML = userSet.length;
@@ -233,12 +233,7 @@
 
     // 메세지가 있을 경우? 메시지를 추가한다
     chatSocket.onmessage = function (e) {
-        let userListObj;
         const data = JSON.parse(e.data);
-
-        if (data['current_user_set']) {
-            userListObj = Object.entries(data['current_user_set']);
-        }
 
         if (data['type'] === NORMAL_MSG) {
             if (data['user_type'] === 1) {
@@ -257,12 +252,10 @@
             }
 
             appendMessage(data['message'], "chat-message-greet");
-            refreshUser(userListObj);
-            document.querySelector('#user-count').innerHTML = data['current_user_count'];
+            refreshUser(data['current_user_set']);
         } else if (data['type'] === LEAVE_MSG) {
             appendMessage(data['message'], "chat-message-leave");
-            refreshUser(userListObj);
-            document.querySelector('#user-count').innerHTML = data['current_user_count'];
+            refreshUser(data['current_user_set']);
         }
 
         document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;

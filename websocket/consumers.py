@@ -3,6 +3,10 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 import json
 from datetime import datetime, timedelta
+
+from django.db.models import DateTimeField, CharField
+from django.db.models.functions import Cast, TruncSecond
+
 from common_library import create_random_string
 from websocket.models import GroupCount
 from asgiref.sync import sync_to_async
@@ -23,8 +27,6 @@ HOST_USER = 1
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    current_user_set = {}
-
     # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
     @sync_to_async
     def add_current_user_to_group(self):
@@ -38,14 +40,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             nickname=self.scope['nickname'],
             groupname=self.groupname
         )
-
-        user_set = getattr(self.channel_layer, self.groupname, {})
-
-        if user_set:
-            user_set[self.scope['nickname']] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-        else:
-            setattr(self.channel_layer, self.groupname,
-                    {self.scope['nickname']: datetime.today().strftime('%Y-%m-%d %H:%M:%S')})
 
     @sync_to_async
     def remove_current_user_to_group(self):
@@ -61,16 +55,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             groupname=self.groupname
         ).delete()
 
-        user_set = getattr(self.channel_layer, self.groupname, None)
-
-        if user_set and user_set.get(self.scope['nickname']):
-            del user_set[self.scope['nickname']]
-
     @sync_to_async
-    def get_current_group_user_count(self):
-        return GroupCount.objects.filter(
+    def get_current_group_user(self):
+        qs = list(GroupCount.objects.filter(
             groupname=self.groupname
-        ).count()
+        ).annotate(
+            joined_time=Cast(
+                TruncSecond('join_time', DateTimeField()), CharField()
+            )
+        ).values(
+            'nickname',
+            'joined_time'
+        ))
+
+        return qs
 
     # websocket 연결 시 실행
     async def connect(self):
@@ -94,20 +92,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if self.scope['client'][0] == "192.168.0.19":
             user_type = HOST_USER
 
+        current_user_set = await self.get_current_group_user()
+
         await self.channel_layer.group_send(
             self.groupname, {
                 'type': 'greet',
                 'username': self.scope['nickname'],
                 'user_type': user_type,
+                'current_user_set': current_user_set,
             }
         )
 
     # websocket 연결 종료 시 실행
     async def disconnect(self, close_code):
+        current_user_set = await self.get_current_group_user()
+
         await self.channel_layer.group_send(
             self.groupname, {
                 'type': 'bye',
                 'username': self.scope['nickname'],
+                'current_user_set': current_user_set,
             }
         )
 
@@ -159,31 +163,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # 환영
     async def greet(self, event):
-        current_user_set = getattr(self.channel_layer, self.groupname, {})
         message = f"""[{event['username']}] 님이 입장하셨습니다."""
-
-        current_user_count = await self.get_current_group_user_count()
 
         await self.send(text_data=json.dumps({
             'type': MESSAGE_TYPE[GREET_MSG],
             'message': message,
-            'current_user_set': current_user_set,
-            'current_user_count': current_user_count,
+            'current_user_set': event['current_user_set'],
             'username': event['username'],
             'user_type': event['user_type'],
         }))
 
     # 나가기
     async def bye(self, event):
-        current_user_set = getattr(self.channel_layer, self.groupname, {})
         message = f"""[{event['username']}] 님이 퇴장하셨습니다."""
-
-        current_user_count = await self.get_current_group_user_count()
 
         await self.send(text_data=json.dumps({
             'type': MESSAGE_TYPE[LEAVE_MSG],
             'message': message,
-            'current_user_set': current_user_set,
-            'current_user_count': current_user_count,
+            'current_user_set': event['current_user_set'],
             'username': event['username'],
         }))
