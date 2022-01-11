@@ -2,9 +2,11 @@ import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 import json
+from datetime import datetime, timedelta
 from common_library import create_random_string
 from websocket.models import GroupCount
 from asgiref.sync import sync_to_async
+
 
 LEAVE_MSG = 0
 GREET_MSG = 1
@@ -26,10 +28,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
     @sync_to_async
     def add_current_user_to_group(self):
-        GroupCount.objects.create(
-            nickname=self.scope['nickname'],
-            groupname=self.groupname
-        )
+        try:
+            GroupCount.objects.get(
+                nickname=self.scope['nickname'],
+                groupname=self.groupname
+            )
+        except:
+            GroupCount.objects.create(
+                nickname=self.scope['nickname'],
+                groupname=self.groupname
+            )
 
         user_set = getattr(self.channel_layer, self.groupname, {})
 
@@ -41,10 +49,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def remove_current_user_to_group(self):
-        GroupCount.objects.filter(
-            nickname=self.scope['nickname'],
-            groupname=self.groupname
-        ).delete()
+        try:
+            GroupCount.objects.get(
+                nickname=self.scope['nickname'],
+                groupname=self.groupname,
+                join_time__gte=datetime.now() - timedelta(seconds=0.5),
+            )
+        except:
+            GroupCount.objects.filter(
+                nickname=self.scope['nickname'],
+                groupname=self.groupname
+            ).delete()
 
         user_set = getattr(self.channel_layer, self.groupname, None)
 
