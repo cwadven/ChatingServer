@@ -5,4 +5,4 @@ from django.db import models
 class GroupCount(models.Model):
     nickname = models.CharField(max_length=128)
     groupname = models.CharField(max_length=128)
-    login_time = models.DateTimeField(db_column='createTime', auto_now_add=True, blank=True, null=True)
+    join_time = models.DateTimeField(auto_now_add=True, blank=True, null=True)
