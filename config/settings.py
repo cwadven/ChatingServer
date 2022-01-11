@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from config.ENV import MY_SECRET_KEY, REDIS_IP
+from config.ENV import MY_SECRET_KEY, REDIS_IP, DATABASE_INFO
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -84,12 +84,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': DATABASE_INFO if SERVER_ENV == 'Main' else {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
