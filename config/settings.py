@@ -9,11 +9,11 @@ SERVER_ENV = os.environ.setdefault('SERVER_ENV', 'Main')
 
 SECRET_KEY = MY_SECRET_KEY
 
-if SERVER_ENV == 'Local':
-    DEBUG = True
+if SERVER_ENV == 'Main':
+    DEBUG = False
     ALLOWED_HOSTS = ["*"]
 else:
-    DEBUG = False
+    DEBUG = True
     ALLOWED_HOSTS = ["*"]
 
 # Application definition
