@@ -28,3 +28,4 @@ sqlparse==0.4.1
 Twisted==20.3.0
 txaio==20.12.1
 zope.interface==5.2.0
+mysqlclient
