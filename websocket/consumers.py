@@ -133,28 +133,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # Receive message from WebSocket
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json.get('message')
-        user_type = NORMAL_USER
-        # Send message to room group
-        # {}가 chat_message event 매소드이다
-        # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
-        username = self.scope['nickname']
+        try:
+            text_data_json = json.loads(text_data)
+            message = text_data_json.get('message')
+            user_type = NORMAL_USER
+            # Send message to room group
+            # {}가 chat_message event 매소드이다
+            # type 키를 이용해 값을 함수 명으로 결정해 해당 메시지를 보내는 형식
+            username = self.scope['nickname']
 
-        if username == "root":
-            user_type = HOST_USER
+            if username == "root":
+                user_type = HOST_USER
 
-        await self.create_chat_log(username, message)
+            await self.create_chat_log(username, message)
 
-        await self.channel_layer.group_send(
-            self.groupname, {
-                'type': 'get_messages',
-                'message': message,
-                'username': username,
-                'sender_channel_name': self.channel_name,
-                'user_type': user_type,
-            }
-        )
+            await self.channel_layer.group_send(
+                self.groupname, {
+                    'type': 'get_messages',
+                    'message': message,
+                    'username': username,
+                    'sender_channel_name': self.channel_name,
+                    'user_type': user_type,
+                }
+            )
+        except:
+            pass
 
     async def get_messages(self, event):
         message = f"[{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}] {event['username']}: {event['message']}"
