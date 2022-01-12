@@ -170,13 +170,13 @@
         const Minute = (currentDate.getMinutes() < 10 ? "0" : "") + currentDate.getMinutes();
         const Second = (currentDate.getSeconds() < 10 ? "0" : "") + currentDate.getSeconds();
 
-        let myMessage = `[${Year}-${Month}-${Day} ${Hour}:${Minute}:${Second}] ${userNickname}: ${message}`
+        let myMessage = `[${Year}-${Month}-${Day} ${Hour}:${Minute}:${Second}] ${userNickname}: ${message}`;
 
         document.querySelector('#chat-message-input').focus();
 
         if (message) {
             if (userType === 1) {
-                myMessage = '[운영자] ' + myMessage
+                myMessage = '[운영자] ' + myMessage;
                 appendMessage(myMessage, "chat-message-self-host");
             } else {
                 appendMessage(myMessage, "chat-self");
@@ -205,7 +205,7 @@
     // 재접속하는 모달 창 관리
     const reconnectModal = new bootstrap.Modal(document.getElementById('reconnect-modal'), {
         keyboard: false
-    })
+    });
 
     // 재접속하는 모달 창 관리
     const reConnectModal = document.getElementById('reconnect-modal');
@@ -264,7 +264,7 @@
     // 소켓통신이 연결되면 실행한다.
     chatSocket.onopen = function (e) {
         appendMessage('\n' + roomName + " 방에 입장하셨습니다." + '\n', "chat-message-center");
-    }
+    };
 
     chatSocket.onclose = function (e) {
         console.error('Chat socket closed unexpectedly');
@@ -311,7 +311,7 @@
             chatSocket.close();
         } catch (e) {
         }
-    }
+    };
 </script>
 
 </body>
