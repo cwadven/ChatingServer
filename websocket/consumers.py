@@ -144,7 +144,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if username == "root":
             user_type = HOST_USER
 
-        self.create_chat_log(username, message)
+        await self.create_chat_log(username, message)
 
         await self.channel_layer.group_send(
             self.groupname, {
