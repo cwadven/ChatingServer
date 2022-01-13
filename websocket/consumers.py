@@ -30,17 +30,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
     @sync_to_async
     def add_current_user_to_group(self):
-        # try:
-        #     GroupCount.objects.get(
-        #         nickname=self.scope['nickname'],
-        #         groupname=self.groupname
-        #     )
-        # except:
-        GroupCount.objects.create(
-            nickname=self.scope['nickname'],
-            receive_buffer=self.channel_name,
-            groupname=self.groupname
-        )
+        try:
+            user = GroupCount.objects.get(
+                nickname=self.scope['nickname'],
+                groupname=self.groupname
+            )
+            user.receive_buffer = self.channel_name
+            user.save(update_fields=["receive_buffer"])
+        except:
+            GroupCount.objects.create(
+                nickname=self.scope['nickname'],
+                receive_buffer=self.channel_name,
+                groupname=self.groupname
+            )
 
     @sync_to_async
     def remove_current_user_to_group(self):
