@@ -5,6 +5,7 @@ from django.db import models
 class GroupCount(models.Model):
     nickname = models.CharField(max_length=128)
     groupname = models.CharField(max_length=128)
+    receive_buffer = models.CharField(max_length=128)
     join_time = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
 
