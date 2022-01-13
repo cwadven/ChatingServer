@@ -2,9 +2,9 @@ import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from django.db.models import DateTimeField, CharField
+from django.db.models import DateTimeField, CharField, Min
 from django.db.models.functions import Cast, TruncSecond
 
 from common_library import create_random_string
@@ -30,48 +30,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 접속 했을 경우 누가 있는지 확인하기 위한 자료구조
     @sync_to_async
     def add_current_user_to_group(self):
-        try:
-            user = GroupCount.objects.get(
-                nickname=self.scope['nickname'],
-                groupname=self.groupname
-            )
-            user.receive_buffer = self.channel_name
-            user.save(update_fields=["receive_buffer"])
-        except:
-            GroupCount.objects.create(
-                nickname=self.scope['nickname'],
-                receive_buffer=self.channel_name,
-                groupname=self.groupname
-            )
+        GroupCount.objects.create(
+            nickname=self.scope['nickname'],
+            receive_buffer=self.channel_name,
+            groupname=self.groupname
+        )
 
     @sync_to_async
     def remove_current_user_to_group(self):
-        # try:
-        #     GroupCount.objects.get(
-        #         nickname=self.scope['nickname'],
-        #         groupname=self.groupname,
-        #         join_time__gte=datetime.now() - timedelta(seconds=0.5),
-        #     )
-        # except:
         GroupCount.objects.filter(
             nickname=self.scope['nickname'],
-            groupname=self.groupname
+            receive_buffer=self.channel_name,
+            groupname=self.groupname,
         ).delete()
 
     @sync_to_async
     def get_current_group_user(self):
-        qs = list(GroupCount.objects.filter(
+        qs = GroupCount.objects.filter(
             groupname=self.groupname
+        ).values(
+            'nickname'
         ).annotate(
-            joined_time=Cast(
-                TruncSecond('join_time', DateTimeField()), CharField()
+            joined_time=Min(
+                Cast(
+                    TruncSecond('join_time', DateTimeField()), CharField()
+                )
             )
         ).values(
             'nickname',
             'joined_time'
-        ))
+        )
 
-        return qs
+        return list(qs)
 
     @sync_to_async
     def create_chat_log(self, username, message):
