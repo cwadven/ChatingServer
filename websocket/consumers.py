@@ -85,6 +85,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             channel_name__in=channel_layer_set
         ).delete()
 
+    @sync_to_async()
+    def is_connected_user_already_exists(self):
+        return GroupCount.objects.filter(
+            nickname=self.scope['nickname'],
+            room_type="course",
+            room_detail=self.groupname,
+        ).exists()
+
     # websocket 연결 시 실행
     async def connect(self):
         # chat/routing.py 에 있는
@@ -103,12 +111,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         await self.delete_disconnected_user()
-        await self.add_current_user_to_group()
 
         user_type = NORMAL_USER
         if self.scope['client'][0] == "192.168.0.19":
             user_type = HOST_USER
 
+        # 2개 이상 있는지 판단 있으면 나가는 메시지 안 남김
+        is_exist = await self.is_connected_user_already_exists()
+
+        await self.add_current_user_to_group()
         current_user_set = await self.get_current_group_user()
 
         await self.channel_layer.group_send(
@@ -117,6 +128,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'username': self.scope['nickname'],
                 'user_type': user_type,
                 'current_user_set': current_user_set,
+                'is_exist': is_exist,
             }
         )
 
@@ -126,11 +138,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         current_user_set = await self.get_current_group_user()
 
+        # 2개 이상 있는지 판단 있으면 나가는 메시지 안 남김
+        is_exist = await self.is_connected_user_already_exists()
+
         await self.channel_layer.group_send(
             self.groupname, {
                 'type': 'bye',
                 'username': self.scope['nickname'],
                 'current_user_set': current_user_set,
+                'is_exist': is_exist,
             }
         )
 
@@ -193,6 +209,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'current_user_set': event['current_user_set'],
             'username': event['username'],
             'user_type': event['user_type'],
+            'is_exist': event['is_exist'],
         }))
 
     # 나가기
@@ -204,4 +221,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'current_user_set': event['current_user_set'],
             'username': event['username'],
+            'is_exist': event['is_exist'],
         }))
