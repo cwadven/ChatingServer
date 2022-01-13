@@ -38,6 +38,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # except:
         GroupCount.objects.create(
             nickname=self.scope['nickname'],
+            receive_buffer=self.channel_name,
             groupname=self.groupname
         )
 
@@ -78,6 +79,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content=message
         )
 
+    @sync_to_async
+    def delete_disconnected_user(self):
+        channel_layer_set = list(self.channel_layer.receive_buffer)
+
+        GroupCount.objects.filter(
+            groupname=self.groupname,
+        ).exclude(
+            receive_buffer__in=channel_layer_set
+        ).delete()
+
     # websocket 연결 시 실행
     async def connect(self):
         # chat/routing.py 에 있는
@@ -94,6 +105,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         await self.accept()
 
+        await self.delete_disconnected_user()
         await self.add_current_user_to_group()
 
         user_type = NORMAL_USER
