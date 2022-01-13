@@ -11,7 +11,6 @@ from common_library import create_random_string
 from websocket.models import GroupCount, GroupChatLog
 from asgiref.sync import sync_to_async
 
-
 LEAVE_MSG = 0
 GREET_MSG = 1
 NORMAL_MSG = 2
@@ -32,22 +31,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def add_current_user_to_group(self):
         GroupCount.objects.create(
             nickname=self.scope['nickname'],
-            receive_buffer=self.channel_name,
-            groupname=self.groupname
+            channel_name=self.channel_name,
+            room_type="course",
+            room_detail=self.groupname,
         )
 
     @sync_to_async
     def remove_current_user_to_group(self):
         GroupCount.objects.filter(
             nickname=self.scope['nickname'],
-            receive_buffer=self.channel_name,
-            groupname=self.groupname,
+            channel_name=self.channel_name,
+            room_type="course",
+            room_detail=self.groupname,
         ).delete()
 
     @sync_to_async
     def get_current_group_user(self):
         qs = GroupCount.objects.filter(
-            groupname=self.groupname
+            room_type="course",
+            room_detail=self.groupname,
         ).values(
             'nickname'
         ).annotate(
@@ -67,8 +69,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def create_chat_log(self, username, message):
         GroupChatLog.objects.create(
             nickname=username,
-            groupname=self.groupname,
-            content=message
+            content=message,
+            room_type="course",
+            room_detail=self.groupname,
         )
 
     @sync_to_async
@@ -76,9 +79,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         channel_layer_set = list(self.channel_layer.receive_buffer)
 
         GroupCount.objects.filter(
-            groupname=self.groupname,
+            room_type="course",
+            room_detail=self.groupname,
         ).exclude(
-            receive_buffer__in=channel_layer_set
+            channel_name__in=channel_layer_set
         ).delete()
 
     # websocket 연결 시 실행
@@ -88,7 +92,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.groupname = self.scope['url_route']['kwargs']['room']
 
         # 접속시 시 바로 닉네임 설정하기
-        self.scope['nickname'] = self.scope['user'].username if self.scope['user'].username else create_random_string(10)
+        self.scope['nickname'] = self.scope['user'].username if self.scope['user'].username else create_random_string(
+            10)
 
         # Join room group
         await self.channel_layer.group_add(
